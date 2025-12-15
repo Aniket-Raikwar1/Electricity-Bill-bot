@@ -1,0 +1,30 @@
+# 🔐 Environment variables
+.env
+
+# 🐍 Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 📦 Virtual environments
+venv/
+env/
+.venv/
+.conda/
+
+# 🧠 IDE / Editors
+.vscode/
+.idea/
+
+# 🪟 Windows
+Thumbs.db
+desktop.ini
+
+# 📄 Logs
+*.log
+
+# 📦 Build / cache
+build/
+dist/
+*.egg-info/
