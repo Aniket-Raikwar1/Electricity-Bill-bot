@@ -4,16 +4,6 @@ requests
 urllib3
 python-dotenv
 
-# --- AI & LLMs (LangChain/OpenAI/Google) ---
-openai==1.81.0
-google-generativeai==0.8.5
-anthropic==0.51.0
-langchain==0.3.25
-langchain-community==0.3.25
-langchain-openai==0.3.17
-langchain-google-genai==2.0.10
-tiktoken==0.9.0
-
 # --- Data Handling ---
 pandas==2.3.1
 numpy
@@ -21,13 +11,6 @@ openpyxl
 sqlalchemy
 supabase==2.24.0
 
-# --- Vector Database (Only keep if you use RAG) ---
-chromadb==1.0.12
-# Note: The libraries below are heavy. If your deployment fails due to "Memory",
-# delete 'sentence-transformers', 'torch', and 'torchvision'.
-sentence-transformers==4.1.0
-torch==2.7.0
-torchvision==0.22.0
 
 # --- Utilities ---
 beautifulsoup4
