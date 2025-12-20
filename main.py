@@ -13,21 +13,7 @@ from scraper_up import BillScraper
 load_dotenv()
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 
-import logging
-import os
-import threading
-from flask import Flask
-from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, MessageHandler, filters
-
-# Import our merged scraper
-from scraper_up import BillScraper
-
-# Load Token
-load_dotenv()
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
-
+# Enable logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
