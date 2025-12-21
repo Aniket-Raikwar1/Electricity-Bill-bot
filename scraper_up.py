@@ -19,11 +19,23 @@ class BillScraper:
 
         # Chrome Options
         self.chrome_options = Options()
-        self.chrome_options.add_argument("--headless") # Uncomment to run invisible
+        self.chrome_options.add_argument("--headless") # MUST be headless on Render
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
         self.chrome_options.add_argument("--window-size=1920,1080")
         
+        # --- CRITICAL RENDER FIX STARTS HERE ---
+        # 1. We define where Chrome lives on the Render server
+        render_chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/google-chrome"
+        
+        # 2. We check: Does this file exist? (It only exists on Render)
+        if os.path.exists(render_chrome_path):
+            print("🖥️ Detected Render Environment: Using Custom Chrome Binary")
+            self.chrome_options.binary_location = render_chrome_path
+        else:
+            print("💻 Detected Local Environment: Using System Chrome")
+        # --- CRITICAL RENDER FIX ENDS HERE ---
+
         # specific prefs to auto-download PDFs without asking
         prefs = {
             "download.default_directory": self.download_dir,
@@ -59,8 +71,8 @@ class BillScraper:
         try:
             print(f"🚀 Opening Website for IVRS: {ivrs_number}")
             driver.get("https://mpwzservices.mpwin.co.in/westdiscom/home")
-            driver.maximize_window()
-
+            # Maximize doesn't work well in headless, so we rely on window-size argument set above
+            
             # --- STEP 1: ENTER IVRS ---
             wait = WebDriverWait(driver, 20)
             ivrs_box = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input[formcontrolname='ivrs']")))
