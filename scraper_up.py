@@ -19,7 +19,7 @@ class BillScraper:
 
         # Chrome Options
         self.chrome_options = Options()
-        # self.chrome_options.add_argument("--headless") # Uncomment to run invisible
+        self.chrome_options.add_argument("--headless") # Uncomment to run invisible
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
         self.chrome_options.add_argument("--window-size=1920,1080")
