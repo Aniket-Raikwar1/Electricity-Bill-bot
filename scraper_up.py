@@ -3,12 +3,12 @@ import os
 import glob
 from datetime import datetime
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.chrome.options import Options
+# Removed: from webdriver_manager.chrome import ChromeDriverManager (Not needed anymore)
+# Removed: from selenium.webdriver.chrome.service import Service (Not needed for simple use)
 
 class BillScraper:
     def __init__(self):
@@ -19,24 +19,23 @@ class BillScraper:
 
         # Chrome Options
         self.chrome_options = Options()
-        self.chrome_options.add_argument("--headless") # MUST be headless on Render
+        self.chrome_options.add_argument("--headless") 
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
         self.chrome_options.add_argument("--window-size=1920,1080")
         
-        # --- CRITICAL RENDER FIX STARTS HERE ---
-        # 1. We define where Chrome lives on the Render server
+        # --- RENDER CONFIGURATION ---
+        # Define where Chrome is on Render
         render_chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/google-chrome"
         
-        # 2. We check: Does this file exist? (It only exists on Render)
+        # Check if we are on Render; if yes, use that binary
         if os.path.exists(render_chrome_path):
             print("🖥️ Detected Render Environment: Using Custom Chrome Binary")
             self.chrome_options.binary_location = render_chrome_path
         else:
             print("💻 Detected Local Environment: Using System Chrome")
-        # --- CRITICAL RENDER FIX ENDS HERE ---
 
-        # specific prefs to auto-download PDFs without asking
+        # Preferences to auto-download PDFs
         prefs = {
             "download.default_directory": self.download_dir,
             "download.prompt_for_download": False,
@@ -54,10 +53,8 @@ class BillScraper:
     def fetch_bill(self, ivrs_number):
         """
         Main logic to fetch the bill. 
-        Returns: Path to the downloaded PDF or None.
         """
-        
-        # 1. CACHE CHECK: Don't download if we already have it for this month
+        # 1. CACHE CHECK
         current_month_str = datetime.now().strftime('%b_%Y')
         expected_filename = os.path.join(self.download_dir, f"Bill_{ivrs_number}_{current_month_str}.pdf")
 
@@ -65,13 +62,14 @@ class BillScraper:
             print(f"✅ Cache Hit: Bill for {ivrs_number} already exists.")
             return expected_filename
 
-        # 2. START BROWSER
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=self.chrome_options)
+        # 2. START BROWSER (FIXED LINE)
+        # We removed ChromeDriverManager. Selenium will now look at 'binary_location',
+        # see the version, and download the correct driver automatically.
+        driver = webdriver.Chrome(options=self.chrome_options)
         
         try:
             print(f"🚀 Opening Website for IVRS: {ivrs_number}")
             driver.get("https://mpwzservices.mpwin.co.in/westdiscom/home")
-            # Maximize doesn't work well in headless, so we rely on window-size argument set above
             
             # --- STEP 1: ENTER IVRS ---
             wait = WebDriverWait(driver, 20)
@@ -83,20 +81,16 @@ class BillScraper:
             print("🖱️ Clicking Submit...")
             submit_btn = driver.find_element(By.XPATH, "//input[@type='submit' and contains(@value, 'View & Pay')]")
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_btn)
-            time.sleep(1) # Small pause for scroll to finish
+            time.sleep(1)
             
-            # Handle window switching
-            old_windows = driver.window_handles
             try:
                 submit_btn.click()
             except:
                 driver.execute_script("arguments[0].click();", submit_btn)
 
-            time.sleep(2) # Wait for potential new tab
+            time.sleep(2)
             new_windows = driver.window_handles
-            
-            if len(new_windows) > len(old_windows):
-                print("🔀 Switching to new tab...")
+            if len(new_windows) > 1: # Fixed logic for window switching
                 driver.switch_to.window(new_windows[-1])
 
             # --- STEP 3: FIND DOWNLOAD BUTTON ---
@@ -120,10 +114,8 @@ class BillScraper:
                 seconds_waited += 1
 
             if seconds_waited < 30:
-                # File downloaded successfully
                 latest_file = self.get_latest_file()
                 if latest_file:
-                    # Rename it to be specific to this user and month
                     os.rename(latest_file, expected_filename)
                     return expected_filename
             else:
@@ -139,5 +131,4 @@ class BillScraper:
 # Testing block
 if __name__ == "__main__":
     scraper = BillScraper()
-    # Test with a real number
     scraper.fetch_bill("N3355009057")
