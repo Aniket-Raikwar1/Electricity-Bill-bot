@@ -63,6 +63,7 @@ async def handle_ivrs(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Send the file
         with open(pdf_path, 'rb') as doc:
             await update.message.reply_document(document=doc, filename=os.path.basename(pdf_path))
+        os.remove(pdf_path)  # Clean up the file after sending
     else:
         await update.message.reply_text(
             "❌ Could not download the bill.\n"
