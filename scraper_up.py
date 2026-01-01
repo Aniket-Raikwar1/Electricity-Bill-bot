@@ -7,8 +7,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
-# Removed: from webdriver_manager.chrome import ChromeDriverManager (Not needed anymore)
-# Removed: from selenium.webdriver.chrome.service import Service (Not needed for simple use)
 
 class BillScraper:
     def __init__(self):
@@ -17,24 +15,14 @@ class BillScraper:
         if not os.path.exists(self.download_dir):
             os.makedirs(self.download_dir)
 
-        # Chrome Options
+        # --- CHROME OPTIONS FOR AWS T3.MICRO ---
         self.chrome_options = Options()
-        self.chrome_options.add_argument("--headless") 
+        self.chrome_options.add_argument("--headless=new") # <--- UPDATED: Modern headless mode
         self.chrome_options.add_argument("--no-sandbox")
         self.chrome_options.add_argument("--disable-dev-shm-usage")
+        self.chrome_options.add_argument("--disable-gpu") # <--- ADDED: Safer for servers without graphics cards
         self.chrome_options.add_argument("--window-size=1920,1080")
         
-        # --- RENDER CONFIGURATION ---
-        # Define where Chrome is on Render
-        render_chrome_path = "/opt/render/project/.render/chrome/opt/google/chrome/google-chrome"
-        
-        # Check if we are on Render; if yes, use that binary
-        if os.path.exists(render_chrome_path):
-            print("🖥️ Detected Render Environment: Using Custom Chrome Binary")
-            self.chrome_options.binary_location = render_chrome_path
-        else:
-            print("💻 Detected Local Environment: Using System Chrome")
-
         # Preferences to auto-download PDFs
         prefs = {
             "download.default_directory": self.download_dir,
@@ -46,7 +34,8 @@ class BillScraper:
 
     def get_latest_file(self):
         """Helper to find the most recently downloaded file"""
-        files = glob.glob(os.path.join(self.download_dir, "*"))
+        # We filter out .crdownload files to ensure we only get finished files
+        files = [f for f in glob.glob(os.path.join(self.download_dir, "*")) if not f.endswith('.crdownload')]
         if not files: return None
         return max(files, key=os.path.getctime)
 
@@ -62,9 +51,7 @@ class BillScraper:
             print(f"✅ Cache Hit: Bill for {ivrs_number} already exists.")
             return expected_filename
 
-        # 2. START BROWSER (FIXED LINE)
-        # We removed ChromeDriverManager. Selenium will now look at 'binary_location',
-        # see the version, and download the correct driver automatically.
+        # 2. START BROWSER
         driver = webdriver.Chrome(options=self.chrome_options)
         
         try:
@@ -90,7 +77,7 @@ class BillScraper:
 
             time.sleep(2)
             new_windows = driver.window_handles
-            if len(new_windows) > 1: # Fixed logic for window switching
+            if len(new_windows) > 1:
                 driver.switch_to.window(new_windows[-1])
 
             # --- STEP 3: FIND DOWNLOAD BUTTON ---
@@ -102,18 +89,32 @@ class BillScraper:
             ))
 
             # Trigger Download
-            initial_files_count = len(os.listdir(self.download_dir))
+            # Note: We take a snapshot of files BEFORE clicking
+            initial_files = set(os.listdir(self.download_dir))
+            
             driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", final_download_btn)
             final_download_btn.click()
 
-            # --- STEP 4: WAIT FOR FILE ---
+            # --- STEP 4: SAFER WAIT LOOP ---
             print("⬇️ Downloading...")
             seconds_waited = 0
-            while len(os.listdir(self.download_dir)) == initial_files_count and seconds_waited < 30:
+            download_complete = False
+            
+            while seconds_waited < 40: # Increased timeout slightly
                 time.sleep(1)
+                current_files = set(os.listdir(self.download_dir))
+                new_files = current_files - initial_files
+                
+                # Check if we have a new file AND it is not a temporary .crdownload file
+                if new_files:
+                    latest = max([os.path.join(self.download_dir, f) for f in new_files], key=os.path.getctime)
+                    if not latest.endswith(".crdownload") and not latest.endswith(".tmp"):
+                        download_complete = True
+                        break
+                
                 seconds_waited += 1
 
-            if seconds_waited < 30:
+            if download_complete:
                 latest_file = self.get_latest_file()
                 if latest_file:
                     os.rename(latest_file, expected_filename)
@@ -131,4 +132,5 @@ class BillScraper:
 # Testing block
 if __name__ == "__main__":
     scraper = BillScraper()
+    # Replace with a real number for testing
     scraper.fetch_bill("N3355009057")
