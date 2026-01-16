@@ -120,5 +120,5 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 **Aniket Raikwar** Data Analyst | Open Source Enthusiast
 
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/aniket-raikwar-396510222)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)]([https://www.linkedin.com/in/aniket-raikwar-396510222](https://www.linkedin.com/in/aniket-raikwar/))
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-black?style=flat&logo=github)](https://github.com/Aniket-Raikwar1)
